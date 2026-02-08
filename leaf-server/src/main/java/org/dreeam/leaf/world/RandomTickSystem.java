@@ -229,14 +229,15 @@ public final class RandomTickSystem {
         if (size == 0) return;
         short location = list.getRaw(boundedNextInt(random, size));
         BlockState state = section.states.get(location);
-        final BlockPos pos = new BlockPos((location & 15) | (chunk.locX << 4), (location >>> 8) | (minSection + (sectionIdx << 4)), ((location >>> 4) & 15) | (chunk.locZ << 4));
-        state.randomTick(world, pos, random);
+        final BlockPos pos = ServerLevel.POS_CACHE.set((location & 15) | (chunk.locX << 4), (location >>> 8) | (minSection + (sectionIdx << 4)), ((location >>> 4) & 15) | (chunk.locZ << 4));
+        final BlockPos finalPos = org.dreeam.leaf.config.modules.opt.MutableBlockPos.enabled ? pos : pos.immutable();
+        state.randomTick(world, finalPos, random);
 
         final boolean doubleTickFluids = !ca.spottedleaf.moonrise.common.PlatformHooks.get().configFixMC224294();
         if (doubleTickFluids) {
             final FluidState fluidState = state.getFluidState();
             if (fluidState.isRandomlyTicking()) {
-                fluidState.randomTick(world, pos, random);
+                fluidState.randomTick(world, finalPos, random);
             }
         }
     }
