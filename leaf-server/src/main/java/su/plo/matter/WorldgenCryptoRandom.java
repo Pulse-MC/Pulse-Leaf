@@ -4,6 +4,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.LegacyRandomSource;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
+import org.dreeam.leaf.config.modules.misc.SecureSeed;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -11,9 +12,20 @@ import java.util.Arrays;
 public class WorldgenCryptoRandom extends WorldgenRandom {
 
     // hash the world seed to guard against badly chosen world seeds
-    private static final long[] HASHED_ZERO_SEED = Hashing.hashWorldSeed(new long[Globals.WORLD_SEED_LONGS]);
+    private static final long[] HASHED_ZERO_SEED = initializeHashedZeroSeed();
     private static final ThreadLocal<long[]> LAST_SEEN_WORLD_SEED = ThreadLocal.withInitial(() -> new long[Globals.WORLD_SEED_LONGS]);
     private static final ThreadLocal<long[]> HASHED_WORLD_SEED = ThreadLocal.withInitial(() -> HASHED_ZERO_SEED);
+
+    private static long[] initializeHashedZeroSeed() {
+        long[] zeroSeed = new long[Globals.WORLD_SEED_LONGS];
+        if (SecureSeed.type == 2) {
+            return HashingBlake2b.hashWorldSeed(zeroSeed);
+        } else if (SecureSeed.type == 3) {
+            return HashingBlake3.hashWorldSeed(zeroSeed);
+        } else {
+            throw new IllegalStateException("Unknown secure seed type: " + SecureSeed.type + ". Using Blake2b by default");
+        }
+    }
 
     private final long[] worldSeed = new long[Globals.WORLD_SEED_LONGS];
     private final long[] randomBits = new long[8];
@@ -42,7 +54,16 @@ public class WorldgenCryptoRandom extends WorldgenRandom {
 
     private long[] getHashedWorldSeed() {
         if (!Arrays.equals(worldSeed, LAST_SEEN_WORLD_SEED.get())) {
-            HASHED_WORLD_SEED.set(Hashing.hashWorldSeed(worldSeed));
+            long[] hashedSeed;
+            if (SecureSeed.type == 2) {
+                hashedSeed = HashingBlake2b.hashWorldSeed(worldSeed);
+            } else if (SecureSeed.type == 3) {
+                hashedSeed = HashingBlake3.hashWorldSeed(worldSeed);
+            } else {
+                throw new IllegalStateException("Unknown secure seed type: " + SecureSeed.type + ". Using Blake2b by default");
+            }
+
+            HASHED_WORLD_SEED.set(hashedSeed);
             System.arraycopy(worldSeed, 0, LAST_SEEN_WORLD_SEED.get(), 0, Globals.WORLD_SEED_LONGS);
         }
         return HASHED_WORLD_SEED.get();
@@ -51,7 +72,13 @@ public class WorldgenCryptoRandom extends WorldgenRandom {
     private void moreRandomBits() {
         message[3] = counter++;
         System.arraycopy(getHashedWorldSeed(), 0, randomBits, 0, 8);
-        Hashing.hash(message, randomBits, cachedInternalState, 64, true);
+        if (SecureSeed.type == 2) {
+            HashingBlake2b.hash(message, randomBits, cachedInternalState, 64, true);
+        } else if (SecureSeed.type == 3) {
+            HashingBlake3.hash(message, randomBits, cachedInternalState, 64, true);
+        } else {
+            throw new IllegalStateException("Unknown secure seed type: " + SecureSeed.type + ". Using Blake2b by default");
+        }
     }
 
     private long getBits(int count) {
