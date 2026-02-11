@@ -48,7 +48,7 @@ subprojects {
     extensions.configure<PublishingExtension> {
         repositories {
             maven(leafMavenPublicUrl) {
-                name = "leaf"
+                name = "pulse"
 
                 credentials.username = System.getenv("REPO_USER")
                 credentials.password = System.getenv("REPO_PASSWORD")

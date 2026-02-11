@@ -10,7 +10,7 @@ import java.util.List;
 public class RecorderOption {
 
     public int recordDistance = -1;
-    public String serverName = "Leaf";
+    public String serverName = "Pulse";
     public RecordWeather forceWeather = null;
     public int forceDayTime = -1;
     public boolean ignoreChat = false;

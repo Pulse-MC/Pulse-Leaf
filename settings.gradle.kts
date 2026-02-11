@@ -33,7 +33,7 @@ if (!file(".git").exists()) {
     error(errorText)
 }
 
-rootProject.name = "leaf"
+rootProject.name = "pulse"
 
 for (name in listOf("leaf-api", "leaf-server")) {
     val projName = name.lowercase(Locale.ENGLISH)
